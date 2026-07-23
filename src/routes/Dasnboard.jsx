@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import supabase from "../supabase-client";
-import { Form } from "./Form";
+import { Form } from "../components/Form";
 
 import {
   BarChart,
