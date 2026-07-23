@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import supabase from "../supabase-client";
+
 import {
   BarChart,
   Bar,
@@ -15,6 +16,30 @@ export const Dashboard = () => {
 
   useEffect(() => {
     fetchMetrics();
+
+    // Create realtime subscription
+    const channel = supabase
+      .channel("deal-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "sales_deal",
+        },
+        (payload) => {
+          console.log("Realtime change:", payload);
+
+          // Refresh dashboard data
+          fetchMetrics();
+        },
+      )
+      .subscribe();
+
+    // Cleanup subscription
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchMetrics = async () => {
@@ -50,7 +75,7 @@ export const Dashboard = () => {
 
   return (
     <div style={{ width: "100%", height: 400 }}>
-      <h1>Sales Dashboard</h1>
+      <h1>Real-Time Sales Dashboard</h1>
 
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={metrics}>
@@ -62,7 +87,7 @@ export const Dashboard = () => {
 
           <Tooltip />
 
-          <Bar dataKey="total" fill="#8884d8" name="Total Sales" />
+          <Bar dataKey="total" name="Total Sales" />
         </BarChart>
       </ResponsiveContainer>
     </div>
