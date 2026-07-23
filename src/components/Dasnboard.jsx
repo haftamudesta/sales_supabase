@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import supabase from "../supabase-client";
+import { Form } from "./Form";
 
 import {
   BarChart,
@@ -12,46 +13,22 @@ import {
 } from "recharts";
 
 export const Dashboard = () => {
+  const [deals, setDeals] = useState([]);
   const [metrics, setMetrics] = useState([]);
 
-  useEffect(() => {
-    fetchMetrics();
-
-    // Create realtime subscription
-    const channel = supabase
-      .channel("deal-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "sales_deal",
-        },
-        (payload) => {
-          console.log("Realtime change:", payload);
-
-          // Refresh dashboard data
-          fetchMetrics();
-        },
-      )
-      .subscribe();
-
-    // Cleanup subscription
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const fetchMetrics = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("sales_deal")
-        .select("name, value");
+        .select("id, name, value")
+        .order("id", { ascending: true });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
+      // Raw deals for the form
+      setDeals(data);
+
+      // Grouped data for the chart
       const groupedData = Object.values(
         data.reduce((acc, deal) => {
           if (!acc[deal.name]) {
@@ -69,27 +46,50 @@ export const Dashboard = () => {
 
       setMetrics(groupedData);
     } catch (error) {
-      console.error("Error fetching metrics:", error);
+      console.error("Error fetching data:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+
+    const channel = supabase
+      .channel("dashboard-sales")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "sales_deal",
+        },
+        () => {
+          fetchData();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchData]);
 
   return (
-    <div style={{ width: "100%", height: 400 }}>
+    <div style={{ padding: "2rem" }}>
       <h1>Real-Time Sales Dashboard</h1>
 
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={metrics}>
-          <CartesianGrid strokeDasharray="3 3" />
+      <div style={{ width: "100%", height: 400 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={metrics}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="total" name="Total Sales" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
 
-          <XAxis dataKey="name" />
-
-          <YAxis />
-
-          <Tooltip />
-
-          <Bar dataKey="total" name="Total Sales" />
-        </BarChart>
-      </ResponsiveContainer>
+      <Form deals={deals} />
     </div>
   );
 };
