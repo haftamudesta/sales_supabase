@@ -3,6 +3,7 @@ import { Header } from "./components/Header";
 import { Dashboard } from "./routes/Dasnboard";
 import SignIn from "./components/SignIn";
 import SignUp from "./components/SignUp";
+import RootRedirect from "./components/RootRedirect";
 
 export const router = createBrowserRouter([
   {
