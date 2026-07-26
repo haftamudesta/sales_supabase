@@ -7,6 +7,10 @@ import SignUp from "./components/SignUp";
 export const router = createBrowserRouter([
   {
     path: "/",
+    element: <RootRedirect />,
+  },
+  {
+    path: "/signin",
     element: <SignIn />,
   },
   {
