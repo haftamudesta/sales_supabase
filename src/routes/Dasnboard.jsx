@@ -25,10 +25,8 @@ export const Dashboard = () => {
 
       if (error) throw error;
 
-      // Raw deals for the form
       setDeals(data);
 
-      // Grouped data for the chart
       const groupedData = Object.values(
         data.reduce((acc, deal) => {
           if (!acc[deal.name]) {
