@@ -1,46 +1,40 @@
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import supabase from "../supabase-client";
+import { useAuth } from "../context/AuthContext";
 
 const initialState = {
   error: null,
 };
 
-async function signIn(_, formData) {
-  const email = formData.get("email");
-  const password = formData.get("password");
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) {
-    return {
-      error: error.message,
-    };
-  }
-
-  return {
-    error: null,
-  };
-}
-
 export default function SignIn() {
   const navigate = useNavigate();
 
-  const [state, action, pending] = useActionState(
-    async (previousState, formData) => {
-      const result = await signIn(previousState, formData);
+  const { signIn, session, loading } = useAuth();
 
-      if (!result.error) {
-        navigate("/dashboard");
-      }
+  useEffect(() => {
+    if (!loading && session) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [session, loading, navigate]);
 
-      return result;
-    },
-    initialState,
-  );
+  const [state, action, pending] = useActionState(async (_, formData) => {
+    const email = formData.get("email");
+    const password = formData.get("password");
+
+    const result = await signIn(email, password);
+
+    return {
+      error: result.error ?? null,
+    };
+  }, initialState);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-slate-900 via-indigo-900 to-purple-900 text-white">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-slate-900 via-indigo-900 to-purple-900 px-4">
