@@ -1,5 +1,5 @@
-import { useActionState } from "react";
-import { Link } from "react-router-dom";
+import { useActionState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const initialState = {
@@ -8,7 +8,15 @@ const initialState = {
 };
 
 export default function SignUp() {
-  const { signUp } = useAuth();
+  const navigate = useNavigate();
+
+  const { signUp, session, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && session) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [session, loading, navigate]);
 
   const [state, action, pending] = useActionState(async (_, formData) => {
     const email = formData.get("email");
@@ -21,6 +29,14 @@ export default function SignUp() {
       error: result.error ?? null,
     };
   }, initialState);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-slate-900 via-indigo-900 to-purple-900 text-white">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-slate-900 via-indigo-900 to-purple-900 px-4">
@@ -57,14 +73,14 @@ export default function SignUp() {
 
           {state.success && (
             <p className="rounded-lg bg-emerald-500/20 p-3 text-emerald-300">
-              Account created successfully. Check your email to verify your
-              account if email confirmation is enabled.
+              Account created successfully.
             </p>
           )}
 
           <button
+            type="submit"
             disabled={pending}
-            className="w-full rounded-lg bg-emerald-500 py-3 font-semibold text-white hover:bg-emerald-600"
+            className="w-full rounded-lg bg-emerald-500 py-3 font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {pending ? "Creating..." : "Create Account"}
           </button>
@@ -73,7 +89,7 @@ export default function SignUp() {
         <p className="mt-6 text-center text-slate-300">
           Already have an account?{" "}
           <Link
-            to="/"
+            to="/signin"
             className="font-semibold text-emerald-400 hover:text-emerald-300"
           >
             Sign In
