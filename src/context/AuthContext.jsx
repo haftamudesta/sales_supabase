@@ -63,11 +63,17 @@ export function AuthContextProvider({ children }) {
   }
 
   // Sign Up
-  async function signUp(email, password) {
+  async function signUp(name, email, password, accountType) {
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email.toLowerCase(),
         password,
+        options: {
+          data: {
+            name,
+            account_type: accountType,
+          },
+        },
       });
 
       if (error) {
